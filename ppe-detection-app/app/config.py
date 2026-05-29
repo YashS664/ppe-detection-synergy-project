@@ -26,7 +26,7 @@ PERSON_CLASS_ID = 5
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = "static_results"
 UPLOAD_DIR = "temp_uploads"
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:9000"
 
 # Tracking & Re-ID Settings
 TRACKER_CONFIG = os.path.join(BASE_DIR, "trackers", "custom_tracker.yaml")

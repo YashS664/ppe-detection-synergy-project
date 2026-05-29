@@ -178,7 +178,8 @@
             font-size: 1.1rem;
         }
 
-        .menu-item:hover, .menu-item.active {
+        .menu-item:hover,
+        .menu-item.active {
             color: #ffffff;
         }
 
@@ -193,7 +194,8 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .dashboard-table th, .dashboard-table td {
+        .dashboard-table th,
+        .dashboard-table td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
@@ -223,9 +225,20 @@
             font-weight: 600;
         }
 
-        .badge-id { background: #e0f2fe; color: #0369a1; }
-        .badge-count { background: #fee2e2; color: #991b1b; }
-        .badge-time { background: #f1f5f9; color: #475569; }
+        .badge-id {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-count {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-time {
+            background: #f1f5f9;
+            color: #475569;
+        }
 
         .sort-icon {
             font-size: 0.7rem;
@@ -291,7 +304,7 @@
             const canvasRef = React.useRef(null);
             const [cameraActive, setCameraActive] = useState(false);
             const [cameraOn, setCameraOn] = useState(false);
-            
+
             // Add continuous capture state for real-time processing loop
             const [continuousMode, setContinuousMode] = useState(false);
             const intervalRef = React.useRef(null);
@@ -306,7 +319,7 @@
             const loadDashboard = async () => {
                 setIsFetchingDashboard(true);
                 try {
-                    const response = await fetch('http://localhost:8000/dashboard');
+                    const response = await fetch('http://localhost:9000/dashboard');
                     if (response.ok) {
                         const data = await response.json();
                         setDashboardData(data);
@@ -349,7 +362,7 @@
                 formData.append('file', selectedFile);
 
                 try {
-                    const response = await fetch('http://localhost:8000/predict', {
+                    const response = await fetch('http://localhost:9000/predict', {
                         method: 'POST',
                         body: formData,
                     });
@@ -417,50 +430,50 @@
 
             // Capture frames from video and send to API for real-time processing
             const captureAndSend = async () => {
-            if (!videoRef.current || !canvasRef.current) return;
+                if (!videoRef.current || !canvasRef.current) return;
 
-            const canvas = canvasRef.current;
-            const video = videoRef.current;
+                const canvas = canvasRef.current;
+                const video = videoRef.current;
 
-            const ctx = canvas.getContext("2d");
+                const ctx = canvas.getContext("2d");
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
 
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const blob = await new Promise((resolve) =>
-                canvas.toBlob(resolve, "image/jpeg")
-            );
+                const blob = await new Promise((resolve) =>
+                    canvas.toBlob(resolve, "image/jpeg")
+                );
 
-            const formData = new FormData();
-            formData.append("file", blob, "frame.jpg");
+                const formData = new FormData();
+                formData.append("file", blob, "frame.jpg");
 
-            try {
-                const response = await fetch("http://localhost:8000/predict", {
-                    method: "POST",
-                    body: formData,
-                });
+                try {
+                    const response = await fetch("http://localhost:9000/predict", {
+                        method: "POST",
+                        body: formData,
+                    });
 
-                const data = await response.json();
-                console.log("Detection result:", data);
+                    const data = await response.json();
+                    console.log("Detection result:", data);
 
-                setResult(data); // show in UI
-            } catch (err) {
-                console.error("Error sending frame:", err);
-            }
-        };
+                    setResult(data); // show in UI
+                } catch (err) {
+                    console.error("Error sending frame:", err);
+                }
+            };
 
-            
+
             // ------------------End Camera & Real-Time -----------------
 
             // ------------------ Main UI Render -----------------
-            
+
             return (
-                <div style={{width: '100%', maxWidth: '1000px'}}>
+                <div style={{ width: '100%', maxWidth: '1000px' }}>
                     {/* Top Menu */}
                     <div className="top-menu">
-                        <div 
+                        <div
                             className={`menu-item ${mainView === 'stream' ? 'active' : ''}`}
                             onClick={() => {
                                 setMainView('stream');
@@ -469,7 +482,7 @@
                         >
                             Stream and Track
                         </div>
-                        <div 
+                        <div
                             className={`menu-item ${mainView === 'dashboard' ? 'active' : ''}`}
                             onClick={() => {
                                 setMainView('dashboard');
@@ -511,10 +524,10 @@
                                     >
                                         Camera
                                     </div>
-                                </div>                    
+                                </div>
 
                                 {/* Upload Box */}
-                                { activeTab === "upload" && (
+                                {activeTab === "upload" && (
                                     <>
                                         <div className="upload-box" onClick={() => document.getElementById('file-input').click()}>
                                             {file ? <strong>{file.name}</strong> : 'Click to Upload Image or Video'}
@@ -530,7 +543,7 @@
                                 )}
 
                                 {/* Camera UI */}
-                                { activeTab === "camera" && (
+                                {activeTab === "camera" && (
                                     <>
                                         <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
 
@@ -602,7 +615,7 @@
                                                             style={{ marginLeft: "10px" }}
                                                         >
                                                             Stop Camera
-                                                        </button>                                            
+                                                        </button>
                                                     </>
                                                 )}
                                             </div>
@@ -610,9 +623,9 @@
                                             {/* Hidden canvas */}
                                             <canvas ref={canvasRef} style={{ display: "none" }} />
                                         </div>
-                                        </>
+                                    </>
                                 )}
-                                
+
 
                                 {/* ------ RESULTS & STATUS ------ */}
 
@@ -656,13 +669,13 @@
                                         {result.type === 'video' && result.stream_url && (
                                             <div>
                                                 <h3>Real-Time Processing Stream</h3>
-                                                <img 
-                                                    key={result.stream_url} 
-                                                    src={result.stream_url} 
-                                                    className="media-preview" 
-                                                    alt="Processing Stream" 
+                                                <img
+                                                    key={result.stream_url}
+                                                    src={result.stream_url}
+                                                    className="media-preview"
+                                                    alt="Processing Stream"
                                                 />
-                                                <p style={{fontSize: '0.8rem', color: '#64748b', textAlign: 'center', marginTop: '10px'}}>
+                                                <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
                                                     Safety status is drawn directly on the frames above in real-time.
                                                 </p>
                                             </div>
@@ -678,13 +691,13 @@
                         {mainView === 'dashboard' && (
                             <div className="dashboard-container">
                                 <h2>Real-Time Person Tracking Logs</h2>
-                                
+
                                 <div className="filter-container">
-                                    <label htmlFor="id-filter" style={{fontSize: '0.9rem', color: '#64748b'}}>Filter by Global ID:</label>
-                                    <input 
+                                    <label htmlFor="id-filter" style={{ fontSize: '0.9rem', color: '#64748b' }}>Filter by Global ID:</label>
+                                    <input
                                         id="id-filter"
-                                        type="text" 
-                                        className="filter-input" 
+                                        type="text"
+                                        className="filter-input"
                                         placeholder="Enter Global ID..."
                                         value={filterId}
                                         onChange={(e) => setFilterId(e.target.value)}
@@ -712,48 +725,48 @@
                                         </thead>
                                         <tbody>
                                             {[...dashboardData]
-                                            .filter(row => {
-                                                const searchStr = filterId.toLowerCase();
-                                                const plainId = row.person_id.toString();
-                                                const fullId = `person #${plainId}`.toLowerCase();
-                                                return filterId === "" || plainId.includes(searchStr) || fullId.includes(searchStr);
-                                            })
-                                            .sort((a, b) => {
-                                                if (a[sortConfig.key] < b[sortConfig.key]) {
-                                                    return sortConfig.direction === 'asc' ? -1 : 1;
-                                                }
-                                                if (a[sortConfig.key] > b[sortConfig.key]) {
-                                                    return sortConfig.direction === 'asc' ? 1 : -1;
-                                                }
-                                                return 0;
-                                            })
-                                            .length > 0 ? [...dashboardData]
-                                            .filter(row => {
-                                                const searchStr = filterId.toLowerCase();
-                                                const plainId = row.person_id.toString();
-                                                const fullId = `person #${plainId}`.toLowerCase();
-                                                return filterId === "" || plainId.includes(searchStr) || fullId.includes(searchStr);
-                                            })
-                                            .sort((a, b) => {
-                                                if (a[sortConfig.key] < b[sortConfig.key]) {
-                                                    return sortConfig.direction === 'asc' ? -1 : 1;
-                                                }
-                                                if (a[sortConfig.key] > b[sortConfig.key]) {
-                                                    return sortConfig.direction === 'asc' ? 1 : -1;
-                                                }
-                                                return 0;
-                                            })
-                                            .map((row, idx) => (
-                                                <tr key={idx}>
-                                                    <td><span className="badge badge-id">Person #{row.person_id}</span></td>
-                                                    <td><span className="badge badge-count">{row.total_emails} Emails</span></td>
-                                                    <td style={{fontSize: '0.8rem'}}><span className="badge badge-time">{row.last_seen}</span></td>
-                                                    <td style={{fontSize: '0.8rem'}}>{row.first_seen}</td>
-                                                    <td style={{fontSize: '0.8rem'}}>{row.email_sent_event || row.last_email_aggregate || 'None'}</td>
-                                                </tr>
-                                            )) : (
+                                                .filter(row => {
+                                                    const searchStr = filterId.toLowerCase();
+                                                    const plainId = row.person_id.toString();
+                                                    const fullId = `person #${plainId}`.toLowerCase();
+                                                    return filterId === "" || plainId.includes(searchStr) || fullId.includes(searchStr);
+                                                })
+                                                .sort((a, b) => {
+                                                    if (a[sortConfig.key] < b[sortConfig.key]) {
+                                                        return sortConfig.direction === 'asc' ? -1 : 1;
+                                                    }
+                                                    if (a[sortConfig.key] > b[sortConfig.key]) {
+                                                        return sortConfig.direction === 'asc' ? 1 : -1;
+                                                    }
+                                                    return 0;
+                                                })
+                                                .length > 0 ? [...dashboardData]
+                                                    .filter(row => {
+                                                        const searchStr = filterId.toLowerCase();
+                                                        const plainId = row.person_id.toString();
+                                                        const fullId = `person #${plainId}`.toLowerCase();
+                                                        return filterId === "" || plainId.includes(searchStr) || fullId.includes(searchStr);
+                                                    })
+                                                    .sort((a, b) => {
+                                                        if (a[sortConfig.key] < b[sortConfig.key]) {
+                                                            return sortConfig.direction === 'asc' ? -1 : 1;
+                                                        }
+                                                        if (a[sortConfig.key] > b[sortConfig.key]) {
+                                                            return sortConfig.direction === 'asc' ? 1 : -1;
+                                                        }
+                                                        return 0;
+                                                    })
+                                                    .map((row, idx) => (
+                                                        <tr key={idx}>
+                                                            <td><span className="badge badge-id">Person #{row.person_id}</span></td>
+                                                            <td><span className="badge badge-count">{row.total_emails} Emails</span></td>
+                                                            <td style={{ fontSize: '0.8rem' }}><span className="badge badge-time">{row.last_seen}</span></td>
+                                                            <td style={{ fontSize: '0.8rem' }}>{row.first_seen}</td>
+                                                            <td style={{ fontSize: '0.8rem' }}>{row.email_sent_event || row.last_email_aggregate || 'None'}</td>
+                                                        </tr>
+                                                    )) : (
                                                 <tr>
-                                                    <td colSpan="5" style={{textAlign: 'center', padding: '2rem', color: '#64748b'}}>
+                                                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                                         {filterId === "" ? "No tracking data found in database yet." : `No results for Global ID "${filterId}"`}
                                                     </td>
                                                 </tr>
@@ -761,7 +774,7 @@
                                         </tbody>
                                     </table>
                                 )}
-                                <div style={{textAlign: 'center', marginTop: '1rem'}}>
+                                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
                                     <button onClick={loadDashboard}>Refresh Data</button>
                                 </div>
                             </div>

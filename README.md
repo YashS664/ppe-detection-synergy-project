@@ -125,3 +125,26 @@ ppe-detection-app/
 
 ---
 *Developed for the IITB-AIMLPractice-Project.*
+
+
+# Steps
+# branch - Main
+# Command to run docker files
+docker run -d -p 3000:80 --name ppe-ui-yollo11 ppe-detection-app-ui:latest
+docker run -d -p 8000:8000 --name ppe-backend-yollo11 ppe-detection-app-backend:latest
+
+# to test
+Frontend UI	http://localhost:3000
+Backend API	http://localhost:8000
+FastAPI Docs	http://localhost:8000/docs
+
+# to delete all non running container
+docker container prune
+
+#run ui and api locally
+#switch to vlm_210526
+Backend : uvicorn app.main:app --host 0.0.0.0 --port 9000
+UI : python -m http.server 4000
+
+#change end point in config.py
+BASE_URL = "http://localhost:9000"
