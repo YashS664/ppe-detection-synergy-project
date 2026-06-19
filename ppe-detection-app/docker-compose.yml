@@ -10,6 +10,7 @@ services:
     restart: always
     volumes:
       - ./weights:/app/weights   # ensure model is available
+      - ./database:/app/database
     env_file:
     - .env
 

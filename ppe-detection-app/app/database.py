@@ -33,6 +33,18 @@ class PersonDatabase:
                 FOREIGN KEY(person_id) REFERENCES persons(id)
             )
         ''')
+
+        # 3. Violations Table: Stores individual PPE violation events per person.
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS violations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                person_id INTEGER,
+                violation_type TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                confidence REAL,
+                FOREIGN KEY(person_id) REFERENCES persons(id)
+            )
+        ''')
         self.conn.commit()
 
     def save_person(self, embedding, metadata=None):
@@ -67,6 +79,20 @@ class PersonDatabase:
             print(f"DATABASE ERROR in save_person: {e}")
             self.conn.rollback()
             return None
+    
+    def save_violation(self, person_id, violation_type, confidence):
+        """Save individual PPE violation event"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''
+                INSERT INTO violations(person_id, violation_type, confidence)
+                VALUES (?, ?, ?)
+            ''', (person_id, violation_type, confidence))
+            self.conn.commit()
+            print(f"DATABASE: Saved violation - Person{person_id} missing {violation_type}")
+        except Exception as e:
+            print(f"DATABASE ERROR in save_violation: {e}")
+            self.conn.rollback()
 
     def update_last_seen(self, person_id):
         """Updates the last_seen timestamp in notification_details for the most recent entry of this person."""

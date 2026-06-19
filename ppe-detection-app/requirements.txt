@@ -14,3 +14,14 @@ ftfy
 regex
 tqdm
 mlflow
+anthropic
+chromadb
+sentence-transformers
+langchain==1.3.7
+langchain-anthropic==1.4.5
+langchain-core==1.4.6
+langchain-community==0.4.2
+langchain-text-splitters==1.1.2
+langchain-huggingface
+ragas==0.4.3
+datasets

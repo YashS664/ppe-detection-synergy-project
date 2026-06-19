@@ -8,7 +8,7 @@ import os
 import uuid
 import base64
 import time
-from app.inference import predict
+from app.inference import predict, is_overlapping
 from app.email_utils import send_email_alert
 from app.database import db
 from app.config import (
@@ -26,6 +26,9 @@ load_dotenv()
 from app.model import init_models
 
 app = FastAPI(title="PPE Detection API")
+
+from app.rag.rag_router import router as rag_router
+app.include_router(rag_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -202,7 +205,48 @@ def gen_frames(video_path):
                                 track_to_global[tid] = gid
                     
                     det["global_id"] = track_to_global.get(tid)
+
+                    if det["class_id"] == PERSON_CLASS_ID:
+                        vlm_scores = det.get("vlm_scores", {})
+                        global_id = det.get("global_id")
+
+                        if PIPELINE_MODE == "VLM" and global_id and vlm_scores:
+                            current_time = time.time()
+                            email_status = db.get_email_status(global_id)
+
+                            last_sent = email_status.get("last_sent") if email_status else None
+                            should_log   = (last_sent is None) or (
+                            current_time - time.mktime(
+                                time.strptime(last_sent, "%Y-%m-%d %H:%M:%S")
+                            ) > VIOLATION_WAIT_TIME)
+
+                            if should_log:
+                                if not vlm_scores.get("hardhat"):
+                                    db.save_violation(
+                                        person_id=global_id, 
+                                        violation_type="hardhat",
+                                        confidence=abs(vlm_scores.get("hardhat_confidence", 0))
+                                    )
+                                if not vlm_scores.get("vest"):
+                                    db.save_violation(
+                                        person_id=global_id, 
+                                        violation_type="vest",
+                                        confidence=abs(vlm_scores.get("vest_confidence", 0))
+                                    )
                     
+                        elif PIPELINE_MODE != "VLM":
+                            violation_class_names = ["NO-Hardhat", "NO-Safety Vest"]
+                            for vdet in current_detections:
+                                if vdet.get("class_name") in violation_class_names:
+                                    if is_overlapping(vdet["bbox"], det["bbox"]):
+                                        violation_type = "hardhat" if "Hardhat" in vdet["class_name"] else "vest"
+                                        db.save_violation(
+                                            person_id=global_id, 
+                                            violation_type=violation_type,
+                                            confidence=vdet.get("confidence", 0)
+                                        )
+
+
                     # Print confidence details only in VLM mode
                     if PIPELINE_MODE == "VLM":
                         vlm = det.get("vlm_scores", {})
