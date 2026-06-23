@@ -131,16 +131,15 @@ Beyond detection, the system includes a natural language query layer built on to
 ### Architecture
 
 ```mermaid
-graphTD
+graph TD
     Q[User Question] --> R[FastAPI /rag Router]
-    R --> GR{FastAPI /rag Router}
-    GR -- "blocked" --> AU1[audit Log: blocked]
-    GR -- "safe" --> SA[LangChain SQL Agent - Claude Haiku]
+    GR --> |blocked| AU1[Audit Log: blocked]
+    GR --> |safe| SA[LangChain SQL Agent - Claude Haiku]
 
     SA --> T1[sql_db_list_tables]
     T1 --> T2[sql_db_schema]
     T2 --> T3[sql_db_query - SELECT only]
-    T3 --> DB[(embeddings.db - READ ONLY)]
+    T3 --> DB[(embeddings.db READ ONLY)]
     DB --> SA
 
     SA --> ANS[Natural Language Answer]
