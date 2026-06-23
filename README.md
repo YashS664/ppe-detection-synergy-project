@@ -124,4 +124,111 @@ ppe-detection-app/
 - **best-stage2-v8.pt**: (Recommended) Fine-tuned in 2 stages: 1st stage frozen backbone (10 layers) for 20 epochs, 2nd stage unfreezed all layers for 100 epochs. Best recall so far for YOLOv8 variant.
 
 ---
-*Developed for the IITB-AIMLPractice-Project.*
+## 🤖 RAG & Agentic AI Module
+
+Beyond detection, the system includes a natural language query layer built on top of the violation database — allowing users to ask questions in plain English instead of writing SQL, alongside automated reporting and quality evaluation.
+
+### Architecture
+
+```mermaid
+graphTD
+    Q[User Question] --> R[FastAPI /rag Router]
+    R --> GR{FastAPI /rag Router}
+    GR -- "blocked" --> AU1[audit Log: blocked]
+    GR -- "safe" --> SA[LangChain SQL Agent - Claude Haiku]
+
+    SA --> T1[sql_db_list_tables]
+    T1 --> T2[sql_db_schema]
+    T2 --> T3[sql_db_query - SELECT only]
+    T3 --> DB[(embeddings.db - READ ONLY)]
+    DB --> SA
+
+    SA --> ANS[Natural Language Answer]
+    ANS --> AU2[Audit Log: success]
+    ANS --> RESP[JSON Response]
+```
+
+### Core Components
+
+1. **LangChain SQL Agent**:
+   *    **Claude Haiku 4.5** generates SQl (`SELECT`, `COUNT`, `GROUP BY`, `JOIN`) agains the `violations` and `persons` tables based on the users question — no hardcoded queries.
+   *    Restricted to a **read-only SQLite connection** (`mode=ro`), so even a malformed query cannot modify the database — enforced at the OS level, independent to the LLM's behavior.
+2.  **Guardrails**:
+    *   Regex-based **input validation** blocks prompt-injection attempts (e.g. "ignore previous instructions") and destructive SQL keywords before they ever reach the LLM.
+    *   `include_tables` restricts the agent's visibility to only `violations` and `persons`.
+    *   A **system prompt** defines scope, enforces SELECT-only behaviour and includes explicit jailbreak resistance instructions. 
+3. **Structured Reporting (Pydantic)**:
+    * `generate_safety_report()` — daily complaince summary with severity-classification (`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`) and an AI-generated recommendation. 
+    * `get_worker_risk_profile(person_id)` — individual worker violation history and risk level.
+    * All outpus are validared through Pydantic models with field-level constraints, so malformed LLM output never silently propagates downstream.
+4. **Audit Trail**:
+    * Every query — successful or balcked is passed with timestamp, question, answer, and block reason to a separate audit database, exposed via `GET /rag/audit`. 
+5. **RAG Evaluation (RAGAS)**:
+    *   **Faithfulness** — verifies the agent's natural language answer is grounded in its own SQL query result(no hallucination)
+    *   **Answer Relevancy** — verifies the answer actually addersses the question asked, scored via local HuggingFace enbeddings. 
+    *   `ground_truth`-based metrics (e.g. Factual Correctness) were deliberately excluded — for a SQL-agent architecture, the agent's query result *is* the source of truth, so comparing against a static expected answer would be circular and go stale as new violations are logged.
+
+### API Endpoints
+ 
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/rag/query` | Ask any natural language question about violations |
+| `GET` | `/rag/report` | Generate a structured daily safety report |
+| `GET` | `/rag/worker/{person_id}` | Get risk profile for a specific worker |
+| `GET` | `/rag/evaluate` | Run RAGAS evaluation and return quality scores |
+| `GET` | `/rag/audit` | View recent query audit trail |
+ 
+All endpoints are documented and testable via Swagger UI at `/docs`.
+ 
+```bash
+curl -X POST http://localhost:8000/rag/query \
+    -H "Content-Type: application/json" \
+    -d '{"question": "Which worker has the most violations?"}'
+```
+
+```json
+{
+    "question": "Which worker has the most violations?",
+    "answer": "Person 1 has the most violations with 2,157 violations."
+}
+```
+
+### Evaluation Results
+
+```json
+{
+  "faithfulness": 1.0,
+  "answer_relevancy": 0.916
+}
+```
+
+A faithfulness score of 1.0 confirms the agent never fabricates numbers — every answer traces back to an actual SQL query result, which is the critical property for a safety-compliance system where data accuracy has real-world consequences.
+
+### Setup
+Add to `.env`
+```bash
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+``` 
+
+Run via Docker (same as main app — see Local Execution above), and then:
+```text
+http://localhost:8000/docs
+```
+
+### Module Structure
+
+```text
+app/rag/
+├── rag_agent.py        # SQL Agent initialization (LangChain + Claude)
+├── rag_models.py        # Pydantic schemas for requests/responses
+├── rag_reports.py        # Structured report & risk profile generation
+├── rag_evaluation.py    # RAGAS-based quality evaluation
+├── guardrails.py        # Input validation & prompt-injection defense
+├── rag_audit.py         # Query audit logging
+├── rag_router.py         # FastAPI endpoints
+└── cli.py               # Standalone command-line interface
+```
+
+**Note:**`app/rag_assistant.py` (project root) is an earlier ChromaDB vector similatiry RAG prototype, kept for reference. It was superseded by the LangChain SQL Agent above because the violation data is structured — questions like *"how many violations today?"* need an exact `COUNT(*)`, not an approximate text match.
+
+*Developed for the IITB-AIMLCapstone-Project.*
